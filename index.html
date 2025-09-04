@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <title>Налоговый калькулятор</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0; padding: 0;
+      background: #f5f5f5;
+    }
+    header {
+      background: #2c3e50;
+      color: white;
+      padding: 20px;
+      text-align: center;
+    }
+    nav {
+      background: #34495e;
+      display: flex;
+      justify-content: center;
+      gap: 20px;
+      padding: 10px;
+    }
+    nav a {
+      color: white;
+      text-decoration: none;
+      font-weight: bold;
+    }
+    nav a:hover {
+      text-decoration: underline;
+    }
+    main {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+      padding: 20px;
+    }
+    section {
+      background: white;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+    h2 { margin-top: 0; }
+    label { display: block; margin: 8px 0 4px; }
+    input, select, button {
+      padding: 8px; width: 100%; margin-bottom: 10px;
+      border: 1px solid #ccc; border-radius: 5px;
+    }
+    button {
+      background: #2ecc71; color: white; font-weight: bold; cursor: pointer;
+    }
+    button:hover { background: #27ae60; }
+    .result { font-weight: bold; margin-top: 10px; }
+    footer {
+      text-align: center;
+      padding: 10px;
+      background: #2c3e50;
+      color: white;
+      margin-top: 20px;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Налоговый калькулятор</h1>
+    <p>Простой инструмент для расчёта налогов и финансовой информации</p>
+  </header>
+
+  <main>
+    <section id="calc">
+      <h2>Калькулятор налога</h2>
+      <label for="income">Годовой доход (₽):</label>
+      <input type="number" id="income" placeholder="Введите доход" value="1200000">
+
+      <label for="category">Категория:</label>
+      <select id="category">
+        <option value="worker" selected>Работник (13%)</option>
+        <option value="entrepreneur">ИП (6%)</option>
+        <option value="pensioner">Пенсионер (0%)</option>
+        <option value="freelancer">Фрилансер (15%)</option>
+      </select>
+
+      <button onclick="calculateTax()">Рассчитать</button>
+      <div class="result" id="taxResult"></div>
+    </section>
+
+    <section id="rates">
+      <h2>Курсы валют</h2>
+      <p style="color:red; font-weight:bold;">
+          Курсы относительно китайского юаня (CNY).
+      </p>
+      <ul id="ratesList"></ul>
+    </section>
+
+    <section id="news">
+      <h2>Финансовые новости</h2>
+      <ul id="newsList"></ul>
+    </section>
+    
+    <section id="tips">
+      <h2>Финансовые советы</h2>
+      <ul>
+          <li>Всегда откладывайте минимум 10% дохода.</li>
+          <li>Диверсифицируйте источники дохода.</li>
+          <li>Избегайте кредитов на потребление.</li>
+          <li>Создайте резервный фонд на 3–6 месяцев расходов.</li>
+      </ul>
+    </section>
+
+    <section>
+      <h2>Калькулятор НДС</h2>
+      <label for="price">Цена без НДС (₽):</label>
+      <input type="number" id="price" placeholder="Введите цену" value="50000">
+
+      <label for="vat">Ставка НДС:</label>
+      <select id="vat">
+        <option value="0.2" selected>20%</option>
+        <option value="0.1">10%</option>
+        <option value="0">0%</option>
+      </select>
+
+      <button onclick="calculateVAT()">Рассчитать НДС</button>
+      <div class="result" id="vatResult"></div>
+    </section>
+
+    <section id="mortgage">
+      <h2>Калькулятор ипотеки</h2>
+      <label>Сумма кредита (₽):</label>
+      <input type="number" id="loan" placeholder="Введите сумму" value="5000000">
+
+      <label>Ставка (% годовых):</label>
+      <input type="number" id="rate" placeholder="Например, 12" value="12">
+
+      <label>Срок (лет):</label>
+      <input type="number" id="years" placeholder="Введите срок" value="20">
+
+      <button onclick="calculateMortgage()">Рассчитать</button>
+      <div class="result" id="mortgageResult"></div>
+    </section>
+
+    <section id="savings">
+      <h2>График накоплений</h2>
+      <label>Ежемесячный взнос (₽):</label>
+      <input type="number" id="deposit" placeholder="Введите сумму" value="15000">
+
+      <label>Ставка (% годовых):</label>
+      <input type="number" id="savingRate" placeholder="Например, 8" value="8">
+
+      <label>Срок (лет):</label>
+      <input type="number" id="savingYears" placeholder="Введите срок" value="10">
+
+      <button onclick="drawSavings()">Построить график</button>
+      <canvas id="savingsChart" width="400" height="200"></canvas>
+    </section>
+  </main>
+
+  <footer>
+    &copy; Рамазон Яздонкулов
+  </footer>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+  <script>
+    function calculateTax() {
+      const income = parseFloat(document.getElementById("income").value);
+      const category = document.getElementById("category").value;
+      if (isNaN(income) || income <= 0) {
+        document.getElementById("taxResult").innerText = "Введите корректный доход.";
+        return;
+      }
+      let taxRate = 0;
+      if (category === "worker") taxRate = 0.13;
+      if (category === "entrepreneur") taxRate = 0.06;
+      if (category === "pensioner") taxRate = 0;
+      if (category === "freelancer") taxRate = 0.15;
+
+      const tax = income * taxRate;
+      document.getElementById("taxResult").innerText = 
+        `Ваш налог: ${tax.toFixed(2)} ₽`;
+    }
+
+    function calculateVAT() {
+      const price = parseFloat(document.getElementById("price").value);
+      const vatRate = parseFloat(document.getElementById("vat").value);
+      if (isNaN(price) || price <= 0) {
+        document.getElementById("vatResult").innerText = "Введите корректную цену.";
+        return;
+      }
+      const vatAmount = price * vatRate;
+      const total = price + vatAmount;
+      document.getElementById("vatResult").innerText = 
+        `НДС: ${vatAmount.toFixed(2)} ₽, Итого с НДС: ${total.toFixed(2)} ₽`;
+    }
+
+    async function loadRates() {
+      try {
+          const res = await fetch("https://api.frankfurter.app/latest?from=EUR&to=USD,CNY");
+          const data = await res.json();
+          const eurToUsd = data.rates.USD;
+          const eurToCny = data.rates.CNY;
+
+          const usdToCny = eurToCny / eurToUsd;
+
+          const list = document.getElementById("ratesList");
+          list.innerHTML = "";
+          list.innerHTML += `<li>1 EUR = ${eurToCny.toFixed(4)} CNY</li>`;
+          list.innerHTML += `<li>1 USD = ${usdToCny.toFixed(4)} CNY</li>`;
+      } catch (err) {
+          document.getElementById("ratesList").innerHTML = "<li>Ошибка загрузки курсов.</li>";
+      }
+    }
+
+    async function loadNews() {
+      try {
+        const res = await fetch("https://api.rss2json.com/v1/api.json?rss_url=https://www.vedomosti.ru/rss/news");
+        const data = await res.json();
+        const list = document.getElementById("newsList");
+        list.innerHTML = "";
+        data.items.slice(0, 5).forEach(item => {
+          const li = document.createElement("li");
+          li.innerHTML = `<a href="${item.link}" target="_blank">${item.title}</a>`;
+          list.appendChild(li);
+        });
+      } catch {
+        document.getElementById("newsList").innerHTML = "<li>Ошибка загрузки новостей.</li>";
+      }
+    }
+
+    function calculateMortgage() {
+      const loan = parseFloat(document.getElementById("loan").value);
+      const rate = parseFloat(document.getElementById("rate").value) / 100 / 12;
+      const years = parseInt(document.getElementById("years").value) * 12;
+      if (isNaN(loan) || isNaN(rate) || isNaN(years) || loan <= 0) {
+          document.getElementById("mortgageResult").innerText = "Введите корректные данные.";
+          return;
+      }
+      const payment = loan * (rate * Math.pow(1 + rate, years)) / (Math.pow(1 + rate, years) - 1);
+      document.getElementById("mortgageResult").innerText =
+          `Ежемесячный платёж: ${payment.toFixed(2)} ₽`;
+    }
+
+    let savingsChart;
+
+    function drawSavings() {
+      const deposit = parseFloat(document.getElementById("deposit").value);
+      const rate = parseFloat(document.getElementById("savingRate").value) / 100 / 12;
+      const months = parseInt(document.getElementById("savingYears").value) * 12;
+
+      if (isNaN(deposit) || isNaN(rate) || isNaN(months) || deposit <= 0) {
+        alert("Введите корректные данные.");
+        return;
+      }
+
+      let balance = 0;
+      const balances = [];
+      const labels = [];
+
+      for (let m = 1; m <= months; m++) {
+        balance = balance * (1 + rate) + deposit;
+        if (m % 12 === 0) {
+          balances.push(balance.toFixed(2));
+          labels.push(`${m / 12} год`);
+        }
+      }
+
+      const ctx = document.getElementById("savingsChart").getContext("2d");
+      if (savingsChart) savingsChart.destroy();
+      savingsChart = new Chart(ctx, {
+        type: "line",
+        data: {
+          labels: labels,
+          datasets: [{
+            label: "Сумма накоплений (₽)",
+            data: balances,
+            borderColor: "rgba(46, 204, 113,1.0)",
+            backgroundColor: "rgba(46, 204, 113,0.2)",
+            fill: true,
+            tension: 0.2
+          }]
+        },
+        options: {
+          responsive: true,
+          plugins: {
+            legend: { display: true }
+          },
+          scales: {
+            y: { beginAtZero: true }
+          }
+        }
+      });
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+      loadRates();
+      loadNews();
+      calculateTax();
+      calculateVAT();
+      calculateMortgage();
+      drawSavings();
+    });
+  </script>
+</body>
+</html>
